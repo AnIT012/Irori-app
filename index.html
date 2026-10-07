@@ -1003,7 +1003,7 @@ body.dark .today-fam-box{border-color:rgba(255,255,255,.07)}
     </div>
   </div>
 
-  <!-- Admin only (b.sho.isshiki&#64;gmail.com) -->
+  <!-- Admin only -->
   <div id="iset-admin-section" style="display:none">
     <div class="iset-section">
       <div class="iset-section-label" style="color:var(--yl)">⚡ システム管理者</div>
@@ -1033,7 +1033,7 @@ body.dark .today-fam-box{border-color:rgba(255,255,255,.07)}
   <div style="padding:0 16px 30px">
     <button onclick="doSignOut()" style="width:100%;padding:15px;background:var(--cd);border:none;border-radius:14px;font-family:'Zen Maru Gothic',sans-serif;font-size:15px;font-weight:700;color:var(--rd);cursor:pointer;box-shadow:var(--sh);margin-bottom:10px">ログアウト</button>
     <button onclick="openDeleteAccount()" style="width:100%;padding:13px;background:transparent;border:1.5px solid rgba(201,64,64,.3);border-radius:14px;font-family:'Zen Maru Gothic',sans-serif;font-size:13px;font-weight:700;color:var(--rd);cursor:pointer">アカウント・データを削除</button>
-    <div style="text-align:center;font-size:10px;color:var(--t3);margin-top:12px">Irori v1.0 · 開発：一色翔</div>
+    <div style="text-align:center;font-size:10px;color:var(--t3);margin-top:12px">Irori v1.0 · 開発：AnIT</div>
   </div>
 </div>
 </div>
@@ -1222,7 +1222,9 @@ function queueRender(fn){
 }
 const FB_CFG={apiKey:"AIzaSyCsGjhymEzDf9XJyPvxvkbFbE7eURbo774",authDomain:"family-app-3393e.firebaseapp.com",projectId:"family-app-3393e",storageBucket:"family-app-3393e.firebasestorage.app",messagingSenderId:"708808816187",appId:"1:708808816187:web:fc119f5e93eb1957418e1e"};
 let ROOM='';  // set dynamically after room selection
-const ADMIN_EMAIL='b.sho.isshiki'+'@'+'gmail.com';
+/* 管理者の判定：メールそのものはコードに置かず、SHA-256 で照らし合わせる */
+const ADMIN_EMAIL_SHA256='2d96138369653811637e4dfd6b5c8430c42de888f12e1b62b5fe20a624102062';
+async function isAdminEmail(e){if(!e)return false;const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(e));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')===ADMIN_EMAIL_SHA256;}
 let isAdmin=false,maintenanceMode=false,isRoomAdmin=false;
 const EMOJIS=['🧑','👩','👨','👧','👦','👵','👴','🧓','🐱','🐶','🐸','🦊','🐼','🌸','⭐','🎓','💼','🏃','🧘','🍀'];
 const TAGC={'学校':'#6480B8','仕事':'#5A9E7C','プライベート':'#D4663E','家族':'#E8A040','病院':'#8E6BB5','その他':'#8A8A8A'};
@@ -1300,7 +1302,7 @@ function signInGoogle(){
 }
 async function checkProfile(u){
   ldtxt('チェック中...');
-  isAdmin=(u.email===ADMIN_EMAIL);
+  isAdmin=await isAdminEmail(u.email);
   // Check global maintenance mode
   try{
     const mDoc=await db.collection('iedash').doc('_app_meta').get();
@@ -1490,7 +1492,7 @@ async function enterRoom(u){
       document.getElementById('loading').classList.add('hide');
       showRoomScreen(u);return;
     }
-    isRoomAdmin=(roomDoc.data().ownerUid===u.uid)||(u.email===ADMIN_EMAIL);
+    isRoomAdmin=(roomDoc.data().ownerUid===u.uid)||(await isAdminEmail(u.email));
   }catch(e){console.warn('room check failed',e);}
   // Check profile in this room
   ldtxt('プロフィール確認中...');
@@ -2346,7 +2348,7 @@ function openModal(type,data={}){
 
 <div style="font-weight:700;color:var(--tx);margin:10px 0 4px">いえダッシュについて</div>
 いえダッシュは、家族間での情報共有を目的とした非営利のウェブアプリです。
-開発者：一色翔（b.sho.isshiki&#64;gmail.com）
+開発者：AnIT
 
 <div style="font-weight:700;color:var(--tx);margin:10px 0 4px">収集する情報</div>
 ・Googleアカウントのメールアドレス・表示名（ログイン認証のみに使用）<br>
@@ -2373,7 +2375,7 @@ function openModal(type,data={}){
 ・開発者は本アプリの利用により生じた損害について責任を負いません
 
 <div style="font-weight:700;color:var(--tx);margin:10px 0 4px">お問い合わせ</div>
-b.sho.isshiki&#64;gmail.com
+GitHub（https://github.com/AnIT012）
 
 <div style="font-size:10px;color:var(--t3);margin-top:12px">最終更新：2026年3月</div>
 </div>
@@ -2934,7 +2936,7 @@ function initSettingsPage(){
   const el2=document.getElementById('tgl-elder');
   if(dk)dk.classList.toggle('on',document.body.classList.contains('dark'));
   if(el2)el2.classList.toggle('on',document.body.classList.contains('elder'));
-  // Admin section (only b.sho.isshiki&#64;gmail.com)
+  // Admin section (admin only)
   const adminSec=document.getElementById('iset-admin-section');
   if(adminSec)adminSec.style.display=isAdmin?'block':'none';
   // Feedback count for admin
